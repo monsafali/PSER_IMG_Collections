@@ -19,6 +19,9 @@ const __dirname = path.resolve();
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    httpOnly: true,
     credentials: true,
   })
 );
