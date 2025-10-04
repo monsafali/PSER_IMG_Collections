@@ -6,6 +6,7 @@ const FileSchema = new mongoose.Schema({
   public_id: { type: String, required: true },
   Phone: { type: Number, required: true }, // remove unique
   HouseSerialNo: { type: Number, required: true },
+  email: { type: String, required: true },
 });
 
 

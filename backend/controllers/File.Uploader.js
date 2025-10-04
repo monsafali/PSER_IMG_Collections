@@ -23,7 +23,7 @@ async function uploadFileToCloudinary(file, folder, quality) {
 
 export const imageUploader = async (req, res) => {
   try {
-    const { RespondentName, Phone, HouseSerialNo } = req.body;
+    const { RespondentName, Phone, HouseSerialNo, email} = req.body;
     const file = req.files.imageFile;
 
     const supportedTypes = ["jpg", "jpeg", "png"];
@@ -48,6 +48,7 @@ export const imageUploader = async (req, res) => {
       HouseSerialNo,
       imageUrl: response.secure_url,
       public_id: response.public_id,
+      email,
     });
 
     res.status(200).json({
@@ -68,8 +69,9 @@ export const imageUploader = async (req, res) => {
 // Controller: Get all uploaded images by user email
 export const getUserImages = async (req, res) => {
   try {
-    const { Phone } = req.query;
-    const files = await File.find({ Phone });
+      const { email } = req.query;
+
+    const files = await File.find({ email });
     res.status(200).json({ success: true, files });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to fetch images" });
