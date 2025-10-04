@@ -15,16 +15,18 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 const __dirname = path.resolve();
-// Middleware
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    httpOnly: true,
-    credentials: true,
-  })
-);
+
+// // Middleware
+// app.use(
+//   cors({
+//     origin: process.env.FRONTEND_URL,
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//     httpOnly: true,
+//     credentials: true,
+//   })
+// );
+
 app.use(express.json());
 app.use(cookieParser()); // required for JWT in cookies
 
@@ -38,9 +40,12 @@ app.use(
   })
 );
 
-
-
-// app.use(fileUpload());
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "/frontend/dist")));
+  app.get("*", (req, res) =>
+    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"))
+  );
+}
 
 // Init Cloudinary
 connetCloud();
