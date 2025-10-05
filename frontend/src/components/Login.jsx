@@ -1,3 +1,5 @@
+
+
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -16,7 +18,14 @@ const Login = () => {
       const res = await axios.post("/api/v1/login", data, {
         withCredentials: true,
       });
-      login(res.data.user || { email: data.email });
+
+      // ✅ Store the user returned by backend for persistence
+      if (res.data.user) {
+        login(res.data.user);
+      } else {
+        login({ email: data.email }); // fallback if no user object is returned
+      }
+
       navigate("/welcome");
     } catch (err) {
       alert(err.response?.data?.message || "Login failed");
@@ -36,6 +45,7 @@ const Login = () => {
   return (
     <div className="max-w-md mx-auto p-6 space-y-4">
       <h2 className="text-2xl font-bold">Login</h2>
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         <input
           {...register("email")}

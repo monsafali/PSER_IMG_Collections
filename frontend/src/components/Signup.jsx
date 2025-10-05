@@ -10,7 +10,7 @@ const Signup = () => {
 
   const onSubmit = async (data) => {
     try {
-      const res = await axios.post("/api/v1/signin", data, {
+      const res = await axios.post("/api/v1/signup", data, {
         withCredentials: true,
       });
       login(res.data.user || { name: data.name, email: data.email }); // mock

@@ -9,6 +9,14 @@ import nodemailer from "nodemailer";
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d"; // for example: 1h, 7d
 
+// helper cookie options
+const cookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production", // secure only in production (HTTPS)
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+});
+
 // Signup
 export const signup = async (req, res) => {
   const { name, email, password } = req.body;
@@ -58,38 +66,34 @@ export const login = async (req, res) => {
       expiresIn: JWT_EXPIRES_IN,
     });
 
-    // Set as HTTP-only cookie
-    res
-      .cookie("token", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      })
-      .json({
-        success: true,
-        message: "Logged in successfully",
-        user: { name: existingUser.name, email: existingUser.email },
-      });
+    res.cookie("token", token, cookieOptions()).json({
+      success: true,
+      message: "Logged in successfully",
+      user: {
+        name: existingUser.name,
+        email: existingUser.email,
+        id: existingUser._id,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Something went wrong" });
   }
 };
 
-// Logout (optional)
+// Logout (allow client to clear cookie even if token expired)
 export const logout = (req, res) => {
   res
     .clearCookie("token", {
       httpOnly: true,
-      sameSite: "none", 
-      secure: true
-
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     })
     .status(200)
     .json({ success: true, message: "Logged out successfully" });
 };
 
+// Forgot password
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -106,9 +110,8 @@ export const forgotPassword = async (req, res) => {
 
     const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
-    // Send email
     const transporter = nodemailer.createTransport({
-      service: "Gmail", // or Mailtrap/SMTP
+      service: "Gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -129,6 +132,7 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
+// Reset password
 export const resetPassword = async (req, res) => {
   const { token } = req.params;
   const { password, confirmPassword } = req.body;
@@ -154,5 +158,22 @@ export const resetPassword = async (req, res) => {
     res
       .status(400)
       .json({ success: false, message: "Invalid or expired token" });
+  }
+};
+
+// Get current user (for /me)
+export const getMe = async (req, res) => {
+  try {
+    // req.user should be set by authenticate middleware (decoded token)
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };

@@ -5,20 +5,20 @@ import {
   signup,
   forgotPassword,
   resetPassword,
+  getMe,
 } from "../controllers/user.controller.js";
 import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/signin", signup);
+// note: use /signup to match common naming
+router.post("/signup", signup); // previously was "/signin"
 router.post("/login", login);
-router.post("/logout", authenticate, logout); // ⬅️ protected route
-router.post("/forgot-password", forgotPassword); // Controller to handle email reset
+router.post("/logout", logout); // allow client to clear cookie even if token expired
+router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 
-// Example protected route
-router.get("/me", authenticate, (req, res) => {
-  res.json({ success: true, user: req.user });
-});
+// protected
+router.get("/me", authenticate, getMe);
 
 export default router;
