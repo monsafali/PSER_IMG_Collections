@@ -23,7 +23,7 @@ async function uploadFileToCloudinary(file, folder, quality) {
 
 export const imageUploader = async (req, res) => {
   try {
-    const { RespondentName, Phone, HouseSerialNo, email} = req.body;
+    const { RespondentName, Phone, HouseSerialNo, email,others} = req.body;
     const file = req.files.imageFile;
 
     const supportedTypes = ["jpg", "jpeg", "png"];
@@ -49,6 +49,7 @@ export const imageUploader = async (req, res) => {
       imageUrl: response.secure_url,
       public_id: response.public_id,
       email,
+      others,
     });
 
     res.status(200).json({
