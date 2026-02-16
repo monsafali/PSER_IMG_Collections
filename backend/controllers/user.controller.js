@@ -93,73 +93,7 @@ export const logout = (req, res) => {
     .json({ success: true, message: "Logged out successfully" });
 };
 
-// Forgot password
-export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
 
-  try {
-    const user = await User.findOne({ email });
-    if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
-    });
-
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
-
-    const transporter = nodemailer.createTransport({
-      service: "Gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      to: user.email,
-      subject: "Password Reset Request",
-      html: `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`,
-    });
-
-    console.log(`Reset email sent to ${user.email}: ${resetLink}`);
-    res.status(200).json({ success: true, message: "Reset email sent" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-// Reset password
-export const resetPassword = async (req, res) => {
-  const { token } = req.params;
-  const { password, confirmPassword } = req.body;
-
-  if (password !== confirmPassword) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Passwords do not match" });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.id;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await User.findByIdAndUpdate(userId, { password: hashedPassword });
-
-    res
-      .status(200)
-      .json({ success: true, message: "Password reset successful" });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(400)
-      .json({ success: false, message: "Invalid or expired token" });
-  }
-};
 
 // Get current user (for /me)
 export const getMe = async (req, res) => {

@@ -1,6 +1,8 @@
+
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+
 import File from "../model/File.model.js";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -23,67 +25,60 @@ async function uploadFileToCloudinary(file, folder, quality) {
 
 export const imageUploader = async (req, res) => {
   try {
-    const { RespondentName, Phone, HouseSerialNo, email,others} = req.body;
+    const { Name, Phone, Fathername, CNIC } = req.body;
     const file = req.files.imageFile;
 
     const supportedTypes = ["jpg", "jpeg", "png"];
-    // const fileType = file.name.split(".")[1];
     const fileType = path.extname(file.name).slice(1).toLowerCase();
 
-    if (!isFileTypeSupported(fileType, supportedTypes))
+    if (!supportedTypes.includes(fileType)) {
       return res.status(400).json({
         success: false,
         message: "File type not supported",
       });
+    }
 
-    // File formate
-
-    const response = await uploadFileToCloudinary(file, "codehelp");
-    console.log(response);
-    // Db men entry save krni haai
+    const response = await uploadFileToCloudinary(file, "PSERCARDS");
 
     const fileData = await File.create({
-      RespondentName,
+      user: req.user.id, // ✅ link to logged in user
+      Name,
       Phone,
-      HouseSerialNo,
+      Fathername,
+      CNIC,
       imageUrl: response.secure_url,
       public_id: response.public_id,
-      email,
-      others,
     });
 
     res.status(200).json({
       success: true,
-      imageUrl: response.secure_url,
       file: fileData,
-      message: "image succesfuly uploaed ",
     });
   } catch (error) {
     console.error(error);
     res.status(400).json({
       success: false,
-      message: "Someting went wrong ",
+      message: "Something went wrong",
     });
   }
 };
 
-// Controller: Get all uploaded images by user email
+
+
 export const getUserImages = async (req, res) => {
   try {
-      const { email } = req.query;
+    const files = await File.find({ user: req.user.id }).sort({
+      createdAt: -1,
+    });
 
-    const files = await File.find({ email });
-    res.status(200).json({ success: true, files });
+    res.status(200).json({
+      success: true,
+      files,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch images" });
-  }
-};
-
-export const DeleteFile = async (req, res) => {
-  try {
-    const deleted = await File.findByIdAndDelete(req.params.id);
-    res.json({ success: true, deleted });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Delete failed" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch images",
+    });
   }
 };

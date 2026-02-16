@@ -6,9 +6,13 @@ import cookieParser from "cookie-parser"; // important for auth
 import UserRouter from "./routers/user.router.js";
 import FileRouter from "./routers/File.router.js";
 
+
+
+
 import fileUpload from "express-fileupload";
 import connetCloud from "./config/cloudinary.js";
 import path from "path";
+import job from "./config/cron.js";
 
 dotenv.config();
 const app = express();
@@ -16,7 +20,9 @@ const port = process.env.PORT || 5000;
 
 const __dirname = path.resolve();
 
-// // Middleware
+
+job.start(); 
+
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,

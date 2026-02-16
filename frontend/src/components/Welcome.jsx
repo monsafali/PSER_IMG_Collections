@@ -1,10 +1,8 @@
-
-
-
 import { useEffect, useState } from "react";
 import { useAuth } from "../AuthContext";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import DownloadCSV from "./DownloadCSV";
 
 const Welcome = () => {
   const { user, logout } = useAuth();
@@ -13,28 +11,26 @@ const Welcome = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const [formData, setFormData] = useState({
-    RespondentName: "",
+    Name: "",
+    Fathername: "",
     Phone: "",
-    HouseSerialNo: "",
+    CNIC: "",
     imageFile: null,
-    others: ""
   });
 
   const navigate = useNavigate();
 
-  // ✅ Fetch user images only when user is loaded (after refresh too)
+  // ✅ Fetch user images
   useEffect(() => {
-    if (!user?.email) return; // ⬅️ prevent unnecessary request before user is ready
+    if (!user) return;
 
     const fetchImages = async () => {
       try {
         const res = await axios.get("/api/v1/files/user-images", {
-          params: { email: user.email },
           withCredentials: true,
         });
         setImages(res.data.files || []);
       } catch (err) {
-        console.error("Error fetching images", err);
         if (err.response?.status === 401) {
           logout();
           navigate("/login");
@@ -53,47 +49,36 @@ const Welcome = () => {
     }
   };
 
-  // ✅ Attach user email to upload request
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!formData.imageFile) return alert("Select a file");
 
     const data = new FormData();
-    data.append("RespondentName", formData.RespondentName);
+    data.append("Name", formData.Name);
+    data.append("Fathername", formData.Fathername);
     data.append("Phone", formData.Phone);
-    data.append("HouseSerialNo", formData.HouseSerialNo);
+    data.append("CNIC", formData.CNIC);
     data.append("imageFile", formData.imageFile);
-    data.append("email", user.email);
-    data.append("others", formData.others);
 
     try {
       setIsUploading(true);
+
       const res = await axios.post("/api/v1/files/upload-image", data, {
         withCredentials: true,
       });
 
-      if (res.data?.file) {
-        setImages((prev) => [...prev, res.data.file]);
-      } else {
-        const imgRes = await axios.get("/api/v1/files/user-images", {
-          params: { email: user.email },
-          withCredentials: true,
-        });
-        setImages(imgRes.data.files || []);
-      }
+      setImages((prev) => [res.data.file, ...prev]);
 
       setFormData({
-        RespondentName: "",
+        Name: "",
+        Fathername: "",
         Phone: "",
-        HouseSerialNo: "",
+        CNIC: "",
         imageFile: null,
-        others: ""
       });
+
       alert("Upload successful");
     } catch (error) {
-      console.error(error);
       if (error.response?.status === 401) {
-        alert("Session expired. Please login again.");
         logout();
         navigate("/login");
       } else {
@@ -104,140 +89,112 @@ const Welcome = () => {
     }
   };
 
-  // ✅ Frontend search filtering
   const filteredImages = images.filter((img) => {
     const term = searchTerm.toLowerCase();
     return (
-      img.RespondentName?.toLowerCase().includes(term) ||
+      img.Name?.toLowerCase().includes(term) ||
       img.Phone?.toString().includes(term) ||
-      img.HouseSerialNo?.toString().includes(term)
+      img.CNIC?.toString().includes(term)
     );
   });
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-4">
-      <div className="text-center mb-4">
-        <h1 className="text-4xl font-bold text-blue-600">
-          Welcome, {user?.name || user?.email || "User"}! 🎉
-        </h1>
-      </div>
+      <h1 className="text-3xl font-bold mb-6">Welcome, {user?.name}</h1>
 
       {/* Upload Form */}
       <form
         onSubmit={handleUpload}
-        className="bg-white shadow-md rounded p-6 mb-8"
+        className="bg-white p-6 shadow rounded mb-8"
       >
-        <h2 className="text-xl font-semibold mb-4">Upload Image</h2>
-        <div className="flex flex-col gap-4">
-          <input
-            type="text"
-            name="RespondentName"
-            placeholder="Respondent Name"
-            value={formData.RespondentName}
-            onChange={handleChange}
-            className="p-2 border rounded"
-            required
-          />
-          <input
-            type="number"
-            name="Phone"
-            placeholder="Enter Phone Number"
-            value={formData.Phone}
-            onChange={handleChange}
-            className="p-2 border rounded"
-            required
-          />
-          <input
-            type="number"
-            name="HouseSerialNo"
-            placeholder="Enter House Serial No"
-            value={formData.HouseSerialNo}
-            onChange={handleChange}
-            className="p-2 border rounded"
-            required
-          />
-          <textarea
-            type="text"
-            name="others"
-            placeholder="Enter others information"
-            value={formData.others}
-            onChange={handleChange}
-            className="p-2 border rounded"
-            required
-          />
-          <input
-            type="file"
-            name="imageFile"
-            accept="image/*"
-            capture="environment"
-            onChange={handleChange}
-            className="p-2 border rounded"
-            required
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 flex items-center justify-center"
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              "Upload"
-            )}
-          </button>
-        </div>
-      </form>
-
-      {/* Search Bar */}
-      <div className="mb-4">
         <input
           type="text"
-          placeholder="Search by Name, Phone, or House Serial No..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 border rounded"
+          name="Name"
+          placeholder="Name"
+          value={formData.Name}
+          onChange={handleChange}
+          className="p-2 border rounded w-full mb-3"
+          required
         />
-      </div>
+        <input
+          type="text"
+          name="Fathername"
+          placeholder="Father Name"
+          value={formData.Fathername}
+          onChange={handleChange}
+          className="p-2 border rounded w-full mb-3"
+          required
+        />
+        <input
+          type="number"
+          name="Phone"
+          placeholder="Phone"
+          value={formData.Phone}
+          onChange={handleChange}
+          className="p-2 border rounded w-full mb-3"
+          required
+        />
+        <input
+          type="number"
+          name="CNIC"
+          placeholder="CNIC"
+          value={formData.CNIC}
+          onChange={handleChange}
+          className="p-2 border rounded w-full mb-3"
+          required
+        />
+        <input
+          type="file"
+          name="imageFile"
+          onChange={handleChange}
+          className="p-2 border rounded w-full mb-3"
+          required
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white py-2 px-4 rounded"
+          disabled={isUploading}
+        >
+          {isUploading ? "Uploading..." : "Upload"}
+        </button>
 
-      {/* Display Filtered Images */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Your Uploaded Images</h2>
-        {filteredImages.length === 0 ? (
-          <p className="text-gray-500">No images found.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {filteredImages.map((img) => (
-              <div
-                key={img._id}
-                className="border rounded-lg shadow p-2 flex flex-col"
-              >
-                <img
-                  src={img.imageUrl}
-                  alt={img.RespondentName}
-                  className="w-full h-48 object-cover rounded"
-                />
-                <div className="mt-2">
-                  <p className="font-semibold">
-                    <span className="font-bold">Name: </span>
-                    {img.RespondentName}
-                  </p>
-                  <p className="text-sm font-semibold">
-                    <span className="font-bold">Phone: </span>
-                    {img.Phone}
-                  </p>
-                  <p className="text-sm font-semibold">
-                    <span className="font-bold">H_Serial_NO: </span>
-                    {img.HouseSerialNo}
-                  </p>
-                  <p className="text-sm font-semibold">
-                    <span className="font-bold">others: </span>
-                    {img.others}
-                  </p>
-                </div>
-              </div>
-            ))}
+      </form>
+
+      {/* Search */}
+      <input
+        type="text"
+        placeholder="Search..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full p-2 border rounded mb-6"
+      />
+
+      {/* Download CSV Button */}
+      <DownloadCSV />
+
+      {/* Images */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {filteredImages.map((img) => (
+          <div key={img._id} className="border p-3 rounded shadow">
+            <img
+              src={img.imageUrl}
+              alt={img.Name}
+              className="w-full h-40 object-cover rounded"
+            />
+            <p>
+              <strong>Name:</strong> {img.Name}
+            </p>
+            <p>
+              <strong>Phone:</strong> {img.Phone}
+            </p>
+            <p>
+              <strong>CNIC:</strong> {img.CNIC}
+            </p>
+            <p className="text-sm text-gray-500">
+              {new Date(img.createdAt).toLocaleString()}
+            </p>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

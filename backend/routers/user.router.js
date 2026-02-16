@@ -3,8 +3,7 @@ import {
   login,
   logout,
   signup,
-  forgotPassword,
-  resetPassword,
+
   getMe,
 } from "../controllers/user.controller.js";
 import { authenticate } from "../middleware/auth.js";
@@ -15,8 +14,7 @@ const router = express.Router();
 router.post("/signup", signup); // previously was "/signin"
 router.post("/login", login);
 router.post("/logout", logout); // allow client to clear cookie even if token expired
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password/:token", resetPassword);
+
 
 // protected
 router.get("/me", authenticate, getMe);
